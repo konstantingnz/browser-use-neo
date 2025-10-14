@@ -446,7 +446,10 @@ class BrowserUseServer:
 		# Agent-based tools
 		if tool_name == 'retry_with_browser_use_agent':
 			return await self._retry_with_browser_use_agent(
-				task=arguments['task']
+				task=arguments['task'],
+				max_steps=arguments.get('max_steps', 100),
+				allowed_domains=arguments.get('allowed_domains', []),
+				use_vision=arguments.get('use_vision', True),
 			)
 
 		# Browser session management tools (don't require active session)
@@ -603,7 +606,11 @@ class BrowserUseServer:
 
 	async def _retry_with_browser_use_agent(
 		self,
-		task: str
+		task: str,
+		max_steps: int = 100,
+		allowed_domains: list[str] | None = None,
+		use_vision: bool = True,
+
 	) -> str:
 		"""Run an autonomous agent task."""
 		# Get LLM config and provider
