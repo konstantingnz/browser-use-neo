@@ -1,3 +1,19 @@
+# À propos de ce fork
+
+Ce fork a été créé pour améliorer la flexibilité de la configuration LLM dans `browser-use`.
+Ce fork a été fait depuis la version 0.8.0 de browseruse. 
+
+## Fichier modifié
+- `browser_use/mcp/server.py`
+- `browser_use/config.py`
+
+## Modifications principales
+- **Ajout de variables d'environnement manquantes** pour la configuration (notamment pour Azure OpenAI et la sélection du modèle LLM).
+- **Modularité du choix du LLM** : il est désormais possible de choisir dynamiquement entre OpenAI et Azure OpenAI via les variables d'environnement, sans modifier le code.
+- La logique de sélection du modèle, de la clé API et des endpoints est unifiée et priorise les variables d'environnement officielles.
+
+---
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./static/browser-use-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="./static/browser-use.png">
@@ -140,3 +156,44 @@ This gives Claude Desktop access to browser automation tools for web scraping, f
 <div align="center">
 Made with ❤️ in Zurich and San Francisco
  </div>
+
+## Variables d'environnement ajoutées et priorités
+
+Deux variables d'environnement ont été ajoutées dans ce fork pour améliorer la modularité et la configuration dynamique :
+
+- `AZURE_AD_TOKEN_PROVIDER` : Provider de token Azure AD (authentification sans clé API, pour Azure OpenAI).
+- `LLM_PROVIDER` : Permet de choisir dynamiquement le provider (`openai` ou `azure`).
+- `AZURE_OPENAI_API_VERSION` : Permet de définir la version d'API utilisée pour Azure OpenAI (ex : `2025-04-01-preview`).
+- `LLM_TEMPERATURE` : Température du modèle LLM. 
+
+Les autres variables (`OPENAI_API_KEY`, `AZURE_OPENAI_KEY`, `AZURE_OPENAI_ENDPOINT`, `BROWSER_USE_LLM_MODEL`, etc.) existaient déjà dans la configuration officielle et sont simplement respectées/priorisées dans la logique du fork.
+
+## Configuration simplifiée via variables d'environnement
+
+Certaines variables d'environnement **surchargent toujours** les paramètres du fichier `config.json` (priorité : env > config.json). Cela permet une utilisation simplifiée : si vous n'avez pas besoin de personnaliser des paramètres avancés, il suffit de définir ces variables d'environnement pour faire tourner le MCP, sans avoir à créer ou éditer de fichier `config.json`.
+
+
+**Variables d'environnement qui overrident la config.json :**
+
+- `OPENAI_API_KEY` ou `AZURE_OPENAI_KEY` (clé API LLM)
+- `BROWSER_USE_LLM_MODEL` (nom du modèle LLM)
+- `AZURE_OPENAI_ENDPOINT` (endpoint Azure OpenAI)
+- `AZURE_OPENAI_API_VERSION` (version API Azure)
+- `LLM_PROVIDER` (provider LLM, ex: openai, azure)
+- `AZURE_AD_TOKEN_PROVIDER` (provider token Azure AD)
+- `LLM_TEMPERATURE` (température du modèle LLM)
+- `BROWSER_USE_HEADLESS` (mode headless du navigateur)
+- `BROWSER_USE_ALLOWED_DOMAINS` (domaines autorisés)
+- `BROWSER_USE_PROXY_URL`, `BROWSER_USE_NO_PROXY`, `BROWSER_USE_PROXY_USERNAME`, `BROWSER_USE_PROXY_PASSWORD` (proxy)
+
+**Cas d'usage simplifié :**
+
+> Si vous ne souhaitez pas gérer de fichier `config.json`, il suffit de définir ces variables d'environnement (dans `.env` ou dans votre shell) : le serveur MCP utilisera automatiquement ces valeurs et ignorera celles du fichier de config pour ces paramètres.
+
+Pour toute personnalisation avancée (autres paramètres du navigateur, de l'agent, etc.), éditez le fichier `config.json` généré automatiquement lors du premier lancement.
+
+---
+
+## Tool: retry_with_browser_use_agent
+
+- La description de l'outil `retry_with_browser_use_agent` a été modifiée pour que le LLM l'appelle systématiquement dès qu'une tâche est un peu complexe ou comporte plusieurs étapes.

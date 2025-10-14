@@ -93,6 +93,7 @@ from browser_use.browser import BrowserProfile, BrowserSession
 from browser_use.config import get_default_llm, get_default_profile, load_browser_use_config
 from browser_use.filesystem.file_system import FileSystem
 from browser_use.llm.openai.chat import ChatOpenAI
+from browser_use.llm.azure.chat import ChatAzureOpenAI
 from browser_use.tools.service import Tools
 
 logger = logging.getLogger(__name__)
@@ -194,7 +195,7 @@ class BrowserUseServer:
 		self.agent: Agent | None = None
 		self.browser_session: BrowserSession | None = None
 		self.tools: Tools | None = None
-		self.llm: ChatOpenAI | None = None
+		self.llm: ChatOpenAI | ChatAzureOpenAI | None = None
 		self.file_system: FileSystem | None = None
 		self._telemetry = ProductTelemetry()
 		self._start_time = time.time()
@@ -344,7 +345,7 @@ class BrowserUseServer:
 				# ),
 				types.Tool(
 					name='retry_with_browser_use_agent',
-					description='Retry a task using the browser-use agent. Only use this as a last resort if you fail to interact with a page multiple times.',
+					description='Use this tool for any complex task that requires multiple steps, subtasks, or sequential planning. The browser agent will orchestrate and execute the requested sequence of actions. This tool should be called by external LLMs or clients whenever a task involves multiple steps, subtasks, or requires sequential orchestration in the browser. It is no longer just a fallback, but the default for complex workflows.',
 					inputSchema={
 						'type': 'object',
 						'properties': {
@@ -445,11 +446,7 @@ class BrowserUseServer:
 		# Agent-based tools
 		if tool_name == 'retry_with_browser_use_agent':
 			return await self._retry_with_browser_use_agent(
-				task=arguments['task'],
-				max_steps=arguments.get('max_steps', 100),
-				model=arguments.get('model', 'gpt-4o'),
-				allowed_domains=arguments.get('allowed_domains', []),
-				use_vision=arguments.get('use_vision', True),
+				task=arguments['task']
 			)
 
 		# Browser session management tools (don't require active session)
@@ -551,13 +548,52 @@ class BrowserUseServer:
 
 		# Initialize LLM from config
 		llm_config = get_default_llm(self.config)
-		if api_key := llm_config.get('api_key'):
-			self.llm = ChatOpenAI(
-				model=llm_config.get('model', 'gpt-4o-mini'),
-				api_key=api_key,
-				temperature=llm_config.get('temperature', 0.7),
-				# max_tokens=llm_config.get('max_tokens'),
-			)
+		# Support both OpenAI and Azure OpenAI
+		provider = llm_config.get('provider', 'openai').lower()
+		
+
+		# Efficient LLM initialization logic
+		api_key = llm_config.get('api_key')
+		temperature = llm_config.get('temperature', 1)
+		model = llm_config.get('model', 'o3')
+
+		if provider == 'azure':
+			try:
+				azure_endpoint = llm_config.get('azure_endpoint')
+			except KeyError:
+				raise ValueError('Azure OpenAI endpoint must be specified in config or AZURE_OPENAI_ENDPOINT env var')
+			api_version = llm_config.get('azure_api_version', '2025-04-01-preview')
+			if api_key:
+				self.llm = ChatAzureOpenAI(
+					model=model,
+					api_key=api_key,
+					azure_endpoint=azure_endpoint,
+					azure_deployment=model,
+					temperature=temperature,
+					api_version=api_version
+				)
+			else:
+				try:
+					azure_ad_token_provider = llm_config.get('azure_ad_token_provider') 
+				except KeyError:
+					raise ValueError('Azure AD token provider must be specified in config or AZURE_AD_TOKEN_PROVIDER env var or else provide an API key')
+				self.llm = ChatAzureOpenAI(
+					model=model,
+					azure_ad_token_provider=azure_ad_token_provider,
+					azure_endpoint=azure_endpoint,
+					azure_deployment=model,
+					temperature=temperature,
+					api_version=api_version
+				)
+		else:
+			if api_key:
+				self.llm = ChatOpenAI(
+					model=model,
+					api_key=api_key,
+					temperature=temperature
+				)
+			else:
+				raise ValueError('OpenAI API key must be specified in config or OPENAI_API_KEY env var')
 
 		# Initialize FileSystem for extraction actions
 		file_system_path = profile_config.get('file_system_path', '~/.browser-use-mcp')
@@ -567,32 +603,50 @@ class BrowserUseServer:
 
 	async def _retry_with_browser_use_agent(
 		self,
-		task: str,
-		max_steps: int = 100,
-		model: str = 'gpt-4o',
-		allowed_domains: list[str] | None = None,
-		use_vision: bool = True,
+		task: str
 	) -> str:
 		"""Run an autonomous agent task."""
-		logger.debug(f'Running agent task: {task}')
-
-		# Get LLM config
+		# Get LLM config and provider
 		llm_config = get_default_llm(self.config)
-		api_key = llm_config.get('api_key') or os.getenv('OPENAI_API_KEY')
-		if not api_key:
-			return 'Error: OPENAI_API_KEY not set in config or environment'
+		provider = llm_config.get('provider', 'openai').lower()
+		api_key = llm_config.get('api_key')
+		temperature = llm_config.get('temperature', 1)
+		model = llm_config.get('model', 'o3')
+		api_version = llm_config.get('azure_api_version', '2025-04-01-preview')
 
-		# Override model if provided in tool call
-		if model != llm_config.get('model', 'gpt-4o'):
-			llm_model = model
+		if provider == 'azure':
+			azure_endpoint = llm_config.get('azure_endpoint')
+			if not azure_endpoint:
+				raise ValueError('Azure OpenAI endpoint must be specified in config or AZURE_OPENAI_ENDPOINT env var')
+			azure_ad_token_provider = llm_config.get('azure_ad_token_provider')
+			if api_key:
+				self.llm = ChatAzureOpenAI(
+					model=model,
+					api_key=api_key,
+					azure_endpoint=azure_endpoint,
+					azure_deployment=model,
+					temperature=temperature,
+					api_version=api_version
+				)
+			else:
+				if not azure_ad_token_provider:
+					raise ValueError('Azure AD token provider must be specified in config or AZURE_AD_TOKEN_PROVIDER env var or else provide an API key')
+				self.llm = ChatAzureOpenAI(
+					model=model,
+					azure_ad_token_provider=azure_ad_token_provider,
+					azure_endpoint=azure_endpoint,
+					azure_deployment=model,
+					temperature=temperature,
+					api_version=api_version
+				)
 		else:
-			llm_model = llm_config.get('model', 'gpt-4o')
+			if api_key:
+				self.llm = ChatOpenAI(
+					model=model,
+					api_key=api_key,
+					temperature=temperature
+				)
 
-		llm = ChatOpenAI(
-			model=llm_model,
-			api_key=api_key,
-			temperature=llm_config.get('temperature', 0.7),
-		)
 
 		# Get profile config and merge with tool parameters
 		profile_config = get_default_profile(self.config)
@@ -607,7 +661,7 @@ class BrowserUseServer:
 		# Create and run agent
 		agent = Agent(
 			task=task,
-			llm=llm,
+			llm=self.llm,
 			browser_profile=profile,
 			use_vision=use_vision,
 		)

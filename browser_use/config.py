@@ -208,6 +208,10 @@ class FlatEnvConfig(BaseSettings):
 	AZURE_OPENAI_KEY: str = Field(default='')
 	SKIP_LLM_API_KEY_VERIFICATION: bool = Field(default=False)
 	DEFAULT_LLM: str = Field(default='')
+	AZURE_OPENAI_API_VERSION: str = Field(default='')
+	LLM_PROVIDER: str = Field(default='')
+	AZURE_AD_TOKEN_PROVIDER: str = Field(default='')
+	LLM_TEMPERATURE: float | None = Field(default=None)
 
 	# Runtime hints
 	IN_DOCKER: bool | None = Field(default=None)
@@ -476,12 +480,23 @@ class Config:
 			config.setdefault('browser_profile', {})
 			config['browser_profile']['proxy'] = proxy_dict
 
+		# Always override LLM config with env vars if set (env > config.json)
 		if env_config.OPENAI_API_KEY:
 			config['llm']['api_key'] = env_config.OPENAI_API_KEY
-
+		if env_config.AZURE_OPENAI_KEY:
+			config['llm']['api_key'] = env_config.AZURE_OPENAI_KEY
 		if env_config.BROWSER_USE_LLM_MODEL:
 			config['llm']['model'] = env_config.BROWSER_USE_LLM_MODEL
-
+		if env_config.AZURE_OPENAI_ENDPOINT:
+			config['llm']['azure_endpoint'] = env_config.AZURE_OPENAI_ENDPOINT
+		if env_config.AZURE_OPENAI_API_VERSION:
+			config['llm']['azure_api_version'] = env_config.AZURE_OPENAI_API_VERSION
+		if env_config.LLM_PROVIDER:
+			config['llm']['provider'] = env_config.LLM_PROVIDER
+		if hasattr(env_config, 'AZURE_AD_TOKEN_PROVIDER') and env_config.AZURE_AD_TOKEN_PROVIDER:
+			config['llm']['azure_ad_token_provider'] = env_config.AZURE_AD_TOKEN_PROVIDER
+		if env_config.LLM_TEMPERATURE is not None:
+			config['llm']['temperature'] = env_config.LLM_TEMPERATURE
 		return config
 
 

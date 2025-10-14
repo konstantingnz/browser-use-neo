@@ -1,8 +1,8 @@
 [project]
-name = "browser-use"
-description = "Make websites accessible for AI agents"
-authors = [{ name = "Gregor Zunic" }]
-version = "0.8.0"
+name = "browser-use-neo"
+description = "This fork adds robust Azure OpenAI support, including AD token authentication, default Azure model/version, and improved environment variable handling for seamless LLM configuration."
+authors = [{ name = "Konstantin Ganz" }]
+version = "0.0.1"
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
 classifiers = [
@@ -87,23 +87,23 @@ eval = [
     "browserbase==1.4.0",
 ]
 cli-oci = [
-    "browser-use[cli,oci]",
+    "browser-use-neo[cli,oci]",
 ]
 all = [
-    "browser-use[cli,examples,aws,oci]",
+    "browser-use-neo[cli,examples,aws,oci]",
 ]
 
-# will prefer to use local source code checked out in ../../browser-use (if present) instead of pypi browser-use package
+# will prefer to use local source code checked out in ../../browser-use-neo (if present) instead of pypi browser-use-neo package
 # [tool.uv.sources]
 # bubus = { path = "../bubus", editable = true }
 
 
 [project.urls]
-Repository = "https://github.com/browser-use/browser-use"
+Repository = "https://github.com/konstantingnz/browser-use-neo.git"
 
 [project.scripts]
-browseruse = "browser_use.cli:main"
-browser-use = "browser_use.cli:main"
+browseruseneo = "browser_use.cli:main"
+browser-use-neo = "browser_use.cli:main"
 
 [build-system]
 requires = ["hatchling"]
