@@ -210,7 +210,6 @@ class FlatEnvConfig(BaseSettings):
 	DEFAULT_LLM: str = Field(default='')
 	AZURE_OPENAI_API_VERSION: str = Field(default='')
 	LLM_PROVIDER: str = Field(default='')
-	AZURE_AD_TOKEN_PROVIDER: str = Field(default='')
 	LLM_TEMPERATURE: float | None = Field(default=None)
 
 	# Runtime hints
@@ -493,8 +492,6 @@ class Config:
 			config['llm']['azure_api_version'] = env_config.AZURE_OPENAI_API_VERSION
 		if env_config.LLM_PROVIDER:
 			config['llm']['provider'] = env_config.LLM_PROVIDER
-		if hasattr(env_config, 'AZURE_AD_TOKEN_PROVIDER') and env_config.AZURE_AD_TOKEN_PROVIDER:
-			config['llm']['azure_ad_token_provider'] = env_config.AZURE_AD_TOKEN_PROVIDER
 		if env_config.LLM_TEMPERATURE is not None:
 			config['llm']['temperature'] = env_config.LLM_TEMPERATURE
 		return config

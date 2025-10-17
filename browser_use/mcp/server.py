@@ -95,6 +95,7 @@ from browser_use.filesystem.file_system import FileSystem
 from browser_use.llm.openai.chat import ChatOpenAI
 from browser_use.llm.azure.chat import ChatAzureOpenAI
 from browser_use.tools.service import Tools
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 
 logger = logging.getLogger(__name__)
 
@@ -625,7 +626,6 @@ class BrowserUseServer:
 			azure_endpoint = llm_config.get('azure_endpoint')
 			if not azure_endpoint:
 				raise ValueError('Azure OpenAI endpoint must be specified in config or AZURE_OPENAI_ENDPOINT env var')
-			azure_ad_token_provider = llm_config.get('azure_ad_token_provider')
 			if api_key:
 				self.llm = ChatAzureOpenAI(
 					model=model,
@@ -636,11 +636,12 @@ class BrowserUseServer:
 					api_version=api_version
 				)
 			else:
-				if not azure_ad_token_provider:
-					raise ValueError('Azure AD token provider must be specified in config or AZURE_AD_TOKEN_PROVIDER env var or else provide an API key')
 				self.llm = ChatAzureOpenAI(
 					model=model,
-					azure_ad_token_provider=azure_ad_token_provider,
+					azure_ad_token_provider=get_bearer_token_provider(
+						DefaultAzureCredential(),
+						"https://cognitiveservices.azure.com/.default"
+					),
 					azure_endpoint=azure_endpoint,
 					azure_deployment=model,
 					temperature=temperature,

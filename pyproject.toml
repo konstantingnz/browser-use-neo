@@ -2,7 +2,7 @@
 name = "browser-use-neo"
 description = "This fork adds robust Azure OpenAI support, including AD token authentication, default Azure model/version, and improved environment variable handling for seamless LLM configuration."
 authors = [{ name = "Konstantin Ganz" }]
-version = "0.0.2"
+version = "0.0.3"
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
 classifiers = [
@@ -42,6 +42,7 @@ dependencies = [
     "pyotp>=2.9.0",
     "html2text>=2025.4.15",
     "pillow>=11.2.1",
+    "azure-identity==1.19.0",
 ]
 # google-api-core: only used for Google LLM APIs
 # pyperclip: only used for examples that use copy/paste

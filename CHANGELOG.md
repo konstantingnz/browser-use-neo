@@ -1,6 +1,5 @@
 # Changelog
 ## 0.0.1
-- Première version du fork basée sur browser-use 0.8.0.
 - Voir README pour la liste complète des modifications principales :
   - Ajout de variables d'environnement manquantes pour la configuration (Azure OpenAI, sélection du modèle LLM, etc.).
   - Modularité du choix du LLM (OpenAI/Azure OpenAI via env vars).
@@ -8,5 +7,10 @@
 
 ## 0.0.2
 - Correction : pas de valeur `allowed_domains` par défaut (bug corrigé, la valeur doit être explicitement définie ou gérée en argument de la fonction retry_with_browser_use_agent dans le fichier server.py). 
+
+## 0.0.3
+- Azure OpenAI : prise en charge des identités managées via `DefaultAzureCredential` et `get_bearer_token_provider`.
+- Si aucune clé API n'est fournie, le serveur utilise automatiquement l'identité managée de l'environnement Azure pour l'authentification.
+- Permet une configuration plus sécurisée et native sur Azure Web App ou VM.
 
 
