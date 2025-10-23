@@ -197,6 +197,9 @@ class FlatEnvConfig(BaseSettings):
 	XDG_CONFIG_HOME: str = Field(default='~/.config')
 	BROWSER_USE_CONFIG_DIR: str | None = Field(default=None)
 
+	# Video recording
+	BROWSER_USE_RECORD_VIDEO_DIR: str | None = Field(default=None)
+
 	# LLM API keys
 	OPENAI_API_KEY: str = Field(default='')
 	ANTHROPIC_API_KEY: str = Field(default='')
@@ -462,6 +465,10 @@ class Config:
 		if env_config.BROWSER_USE_ALLOWED_DOMAINS:
 			domains = [d.strip() for d in env_config.BROWSER_USE_ALLOWED_DOMAINS.split(',') if d.strip()]
 			config['browser_profile']['allowed_domains'] = domains
+
+		# Video recording dir override
+		if env_config.BROWSER_USE_RECORD_VIDEO_DIR:
+			config['browser_profile']['record_video_dir'] = env_config.BROWSER_USE_RECORD_VIDEO_DIR
 
 		# Proxy settings (Chromium) -> consolidated `proxy` dict
 		proxy_dict: dict[str, Any] = {}
