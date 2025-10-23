@@ -13,4 +13,7 @@
 - Si aucune clé API n'est fournie, le serveur utilise automatiquement l'identité managée de l'environnement Azure pour l'authentification.
 - Permet une configuration plus sécurisée et native sur Azure Web App ou VM.
 
+## 0.0.4
+- Ajout de la variable d'environnement `BROWSER_USE_RECORD_VIDEO_DIR` pour surcharger le chemin d'enregistrement vidéo via l'environnement.
+
 
