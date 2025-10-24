@@ -16,4 +16,7 @@
 ## 0.0.4
 - Ajout de la variable d'environnement `BROWSER_USE_RECORD_VIDEO_DIR` pour surcharger le chemin d'enregistrement vidéo via l'environnement.
 
+## 0.0.5
+- Ajout : le chemin d'enregistrement de la vidéo peut maintenant être relatif et inclut automatiquement le nom d'utilisateur de l'utilisateur courant. Cela permet de séparer les vidéos générées par chaque utilisateur dans des sous-dossiers dédiés.
+
 

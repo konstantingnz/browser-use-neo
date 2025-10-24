@@ -362,7 +362,7 @@ class BrowserUseServer:
 							'model': {
 								'type': 'string',
 								'description': 'LLM model to use (e.g., gpt-4o, claude-3-opus-20240229)',
-								'default': 'gpt-4o',
+								'default': 'o3',
 							},
 							'allowed_domains': {
 								'type': 'array',
@@ -375,6 +375,11 @@ class BrowserUseServer:
 								'description': 'Whether to use vision capabilities (screenshots) for the agent',
 								'default': True,
 							},
+							'username': {
+								'type': 'string',
+								'description': 'Email Address of the User (required)',
+								'default': 'dummy.email@groupeonepoint.com',
+							}
 						},
 						'required': ['task'],
 					},
@@ -451,6 +456,7 @@ class BrowserUseServer:
 				max_steps=arguments.get('max_steps', 100),
 				allowed_domains=arguments.get('allowed_domains', []),
 				use_vision=arguments.get('use_vision', True),
+				username=arguments.get('username', 'dummy.email@groupeonepoint.com')
 			)
 
 		# Browser session management tools (don't require active session)
@@ -611,6 +617,7 @@ class BrowserUseServer:
 		max_steps: int = 100,
 		allowed_domains: list[str] | None = None,
 		use_vision: bool = True,
+		username: str = 'dummy.email@groupeonepoint.com'
 
 	) -> str:
 		"""Run an autonomous agent task."""
@@ -621,6 +628,13 @@ class BrowserUseServer:
 		temperature = llm_config.get('temperature', 1)
 		model = llm_config.get('model', 'o3')
 		api_version = llm_config.get('azure_api_version', '2025-04-01-preview')
+		print('Initializing LLM for agent...')
+		print(f"llm_config: {llm_config}")
+		print(f"provider: {provider}")
+		print(f"api_key: {'set' if api_key else 'not set'}")
+		print(f'temperature: {temperature}')
+		print(f'model: {model}')
+		print(f'api_version: {api_version}')
 
 		if provider == 'azure':
 			azure_endpoint = llm_config.get('azure_endpoint')
@@ -658,11 +672,16 @@ class BrowserUseServer:
 
 		# Get profile config and merge with tool parameters
 		profile_config = get_default_profile(self.config)
+		for key, value in profile_config.items():
+			with open('/Users/k.ganz/Browser_Use_Videos/debug_profile_config.txt', 'a') as f:
+				f.write(f'Profile config - {key}: {value}\n')
+
 
 		# Override allowed_domains if provided in tool call
 		if allowed_domains is not None:
 			profile_config['allowed_domains'] = allowed_domains
 
+		profile_config['record_video_dir'] = profile_config['record_video_dir'] + f'/{username.split("@")[0]}'
 		# Create browser profile using config
 		profile = BrowserProfile(**profile_config)
 
