@@ -29,6 +29,7 @@ class RecordingWatchdog(BaseWatchdog):
 		Starts video recording if it is configured in the browser profile.
 		"""
 		profile = self.browser_session.browser_profile
+
 		with open('/Users/k.ganz/Browser_Use_Videos/debug_recording_watchdog.txt', 'a') as f:
 			f.write(f'RecordingWatchdog: profile.record_video_dir = {profile.record_video_dir}\n')
 		if not profile.record_video_dir:
@@ -45,7 +46,7 @@ class RecordingWatchdog(BaseWatchdog):
 			return
 
 		video_format = getattr(profile, 'record_video_format', 'mp4').strip('.')
-		output_path = Path(profile.record_video_dir) / f'{uuid7str()}.{video_format}'
+		output_path = Path(profile.record_video_dir) / f'{profile.record_video_file}.{video_format}'
 
 		self.logger.debug(f'Initializing video recorder for format: {video_format}')
 		self._recorder = VideoRecorderService(output_path=output_path, size=size, framerate=profile.record_video_framerate)

@@ -36,6 +36,7 @@ import logging
 import time
 from pathlib import Path
 from typing import Any
+import re
 
 # Configure logging for MCP mode - redirect to stderr but preserve critical diagnostics
 logging.basicConfig(
@@ -51,6 +52,40 @@ except ImportError:
 
 # Add browser-use to path if running from source
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Custom unidecode function
+def custom_unidecode(string: str, replace_spaces: bool = True) -> str:
+    """
+    For license reasons, we cannot use unidecode package. So we have created a custom function to replace accented characters and spaces in a string with their unaccented counterparts.
+    Replaces accented characters and spaces in a string with their unaccented counterparts.
+
+    Args:
+        string (str): The input string to be processed.
+
+    Returns:
+        str: The processed string with accented characters and spaces replaced.
+
+    Example:
+        >>> custom_unidecode("éê hello")
+        'eehello'
+    """
+    remplacements = {
+        "é": "e",
+        "ê": "e",
+        "è": "e",
+        "à": "a",
+        "ç": "c",
+        "ô": "o",
+        "î": "i",
+        "û": "u",
+        "â": "a",
+        "ù": "u",
+    }
+    if replace_spaces:
+        remplacements[" "] = ""
+    for ancien, nouveau in remplacements.items():
+        string = string.replace(ancien, nouveau)
+    return string
 
 # Import and configure logging to use stderr before other imports
 from browser_use.logging_config import setup_logging
@@ -96,8 +131,30 @@ from browser_use.llm.openai.chat import ChatOpenAI
 from browser_use.llm.azure.chat import ChatAzureOpenAI
 from browser_use.tools.service import Tools
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from browser_use.llm.messages import UserMessage
 
 logger = logging.getLogger(__name__)
+
+
+# Helper function to call LLM and get proposed filename
+async def _call_llm_and_get_name(llm, prompt_text: str) -> str:
+    """Call ChatAzureOpenAI.ainvoke with a UserMessage and return a sanitized filename string."""
+    # Build messages using browser_use message types
+    messages = [UserMessage(content=prompt_text)]
+
+    # Call the async LLM interface (ChatAzureOpenAI implements `ainvoke`)
+    resp = await llm.ainvoke(messages, output_format=None)
+
+    # Extract text result
+    raw = getattr(resp, 'completion', None) or str(resp)
+
+    # Sanitise: transliterate, lowercase, keep only a-z0-9_- and trim
+    name = custom_unidecode(raw).lower().strip()
+    name = re.sub(r'[^a-z0-9_-]', '_', name)
+    name = name[:60].strip('_')
+    if not name:
+        name = 'recording'
+    return name
 
 
 def _ensure_all_loggers_use_stderr():
@@ -676,12 +733,38 @@ class BrowserUseServer:
 			with open('/Users/k.ganz/Browser_Use_Videos/debug_profile_config.txt', 'a') as f:
 				f.write(f'Profile config - {key}: {value}\n')
 
+		#Get the name of the video using the task description
+		title_prompt = """Une tentative de navigation/retry a été réalisée par l'agent BrowserUse à partir de cette tâche : {task}.
+			Si la tâche contient déjà un nom de fichier proposé, utilisez-le exactement tel quel.
+			Sinon, proposez un nom court et descriptif, en anglais, qui identifie l'enregistrement/vidéo produit lors de ce retry (par ex. en incluant le sujet principal ou la page visitée).
+			Votre sortie ne doit contenir qu'un seul token : le nom de fichier sans extension ni ponctuation superflue.
+			Contraintes strictes :
+
+			chaîne en minuscules,
+			n'utiliser que les caractères [a-z0-9_-] (remplacez les espaces par "_" si nécessaire),
+			pas d'espaces, pas de slashs ("/" ou ""), pas de points autres que l'extension (que vous ne devez pas fournir),
+			longueur maximale recommandée : 60 caractères,
+			ne renvoyez aucun texte explicatif, guillemets, ou ponctuation — uniquement le nom proposé.
+			Exemples valides :
+			browser_retry_product_demo
+			page_checkout_error_retry
+			nyt_homepage_snapshot
+			session_interview_2025-10-27
+			video_search_results_retry
+			"""
+		prompt_text = title_prompt.format(task=task)
+		llm_proposed_file_name = await _call_llm_and_get_name(self.llm, prompt_text)
+		print(f"LLM proposed file name: {llm_proposed_file_name}")
+
 
 		# Override allowed_domains if provided in tool call
 		if allowed_domains is not None:
 			profile_config['allowed_domains'] = allowed_domains
 
-		profile_config['record_video_dir'] = profile_config['record_video_dir'] + f'/{username.split("@")[0]}'
+		profile_config['record_video_dir'] = profile_config['record_video_dir'] + f'/{username.split("@")[0]}' 
+		profile_config['record_video_file'] = llm_proposed_file_name 
+		print(f"Video will be saved to: {profile_config['record_video_dir']}")
+		print(f"Video file will be: {profile_config['record_video_file']}")
 		# Create browser profile using config
 		profile = BrowserProfile(**profile_config)
 
@@ -697,19 +780,19 @@ class BrowserUseServer:
 			history = await agent.run(max_steps=max_steps)
 
 			# Format results
-			results = []
-			results.append(f'Task completed in {len(history.history)} steps')
-			results.append(f'Success: {history.is_successful()}')
+			content = []
+			content.append(f'Task completed in {len(history.history)} steps')
+			content.append(f'Success: {history.is_successful()}')
 
 			# Get final result if available
 			final_result = history.final_result()
 			if final_result:
-				results.append(f'\nFinal result:\n{final_result}')
+				content.append(f'\nFinal result:\n{final_result}')
 
 			# Include any errors
 			errors = history.errors()
 			if errors:
-				results.append(f'\nErrors encountered:\n{json.dumps(errors, indent=2)}')
+				content.append(f'\nErrors encountered:\n{json.dumps(errors, indent=2)}')
 
 			# Include URLs visited
 			urls = history.urls()
@@ -717,9 +800,16 @@ class BrowserUseServer:
 				# Filter out None values and convert to strings
 				valid_urls = [str(url) for url in urls if url is not None]
 				if valid_urls:
-					results.append(f'\nURLs visited: {", ".join(valid_urls)}')
+					content.append(f'\nURLs visited: {", ".join(valid_urls)}')
+			
+			# Include final video recording path if available
+			if profile_config['record_video_dir']:
+				video_format = getattr(profile, 'record_video_format', 'mp4').strip('.')
+				artifact = f'{profile_config["record_video_dir"]}/{profile_config["record_video_file"]}.{video_format}'
 
-			return '\n'.join(results)
+			merged_content = '\n'.join([str(c) for c in content])
+			payload = json.dumps([merged_content, artifact], ensure_ascii=False)
+			return payload
 
 		except Exception as e:
 			logger.error(f'Agent task failed: {e}', exc_info=True)

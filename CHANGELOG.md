@@ -19,4 +19,10 @@
 ## 0.0.5
 - Ajout : le chemin d'enregistrement de la vidéo peut maintenant être relatif et inclut automatiquement le nom d'utilisateur de l'utilisateur courant. Cela permet de séparer les vidéos générées par chaque utilisateur dans des sous-dossiers dédiés.
 
+## 0.0.6
+- Ajout : nouvelle variable `record_video_file` qui est définie via un appel LLM dans `server.py` pour nommer la vidéo d'enregistrement de façon plus user-friendly.
+- Changement : l'output de retry est maintenant un dump JSON contenant une liste avec deux éléments :
+  - `content` : tout le contenu de la réponse
+  - `artifact` : le chemin local vers la vidéo générée
+
 
