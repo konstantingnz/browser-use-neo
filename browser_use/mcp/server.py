@@ -729,9 +729,6 @@ class BrowserUseServer:
 
 		# Get profile config and merge with tool parameters
 		profile_config = get_default_profile(self.config)
-		for key, value in profile_config.items():
-			with open('/Users/k.ganz/Browser_Use_Videos/debug_profile_config.txt', 'a') as f:
-				f.write(f'Profile config - {key}: {value}\n')
 
 		#Get the name of the video using the task description
 		title_prompt = """Une tentative de navigation/retry a été réalisée par l'agent BrowserUse à partir de cette tâche : {task}.

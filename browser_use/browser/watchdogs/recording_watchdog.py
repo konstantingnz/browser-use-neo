@@ -29,9 +29,6 @@ class RecordingWatchdog(BaseWatchdog):
 		Starts video recording if it is configured in the browser profile.
 		"""
 		profile = self.browser_session.browser_profile
-
-		with open('/Users/k.ganz/Browser_Use_Videos/debug_recording_watchdog.txt', 'a') as f:
-			f.write(f'RecordingWatchdog: profile.record_video_dir = {profile.record_video_dir}\n')
 		if not profile.record_video_dir:
 			return
 

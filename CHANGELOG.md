@@ -25,4 +25,5 @@
   - `content` : tout le contenu de la réponse
   - `artifact` : le chemin local vers la vidéo générée
 
-
+## 0.0.7
+-Patch : Oublie de retrait d'un log qui créeait une erreur systématique en déployé.
