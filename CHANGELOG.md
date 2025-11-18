@@ -27,3 +27,6 @@
 
 ## 0.0.7
 -Patch : Oublie de retrait d'un log qui créeait une erreur systématique en déployé.
+
+## 0.0.8 
+-Patch : Mauvaise condition dans retry qui empechait d'accéder à la connection par IAM.

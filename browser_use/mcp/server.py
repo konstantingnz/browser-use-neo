@@ -697,7 +697,7 @@ class BrowserUseServer:
 			azure_endpoint = llm_config.get('azure_endpoint')
 			if not azure_endpoint:
 				raise ValueError('Azure OpenAI endpoint must be specified in config or AZURE_OPENAI_ENDPOINT env var')
-			if api_key:
+			if api_key and api_key != 'your-openai-api-key-here':
 				self.llm = ChatAzureOpenAI(
 					model=model,
 					api_key=api_key,
