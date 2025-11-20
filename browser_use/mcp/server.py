@@ -132,6 +132,7 @@ from browser_use.llm.azure.chat import ChatAzureOpenAI
 from browser_use.tools.service import Tools
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from browser_use.llm.messages import UserMessage
+from uuid import uuid4
 
 logger = logging.getLogger(__name__)
 
@@ -762,6 +763,30 @@ class BrowserUseServer:
 		profile_config['record_video_file'] = llm_proposed_file_name 
 		print(f"Video will be saved to: {profile_config['record_video_dir']}")
 		print(f"Video file will be: {profile_config['record_video_file']}")
+
+		#Create a unique directory user_data_dir to store browser data for this call 
+		timestamp = int(time.time())
+		# Ensure path doesn't already exist (extremely unlikely but possible)
+		unique_id = str(uuid4())[:8]
+		user_data_dir_path = Path.cwd() / '.neo-sandbox' / 'browser_use_user_data_dir' / f'{username.split("@")[0]}_{unique_id}_{timestamp}'
+		while user_data_dir_path.exists():
+			timestamp = int(time.time())
+			unique_id = str(uuid4())[:8]
+			user_data_dir_path = Path.cwd() / '.neo-sandbox' / 'browser_use_user_data_dir' / f'{username.split("@")[0]}_{unique_id}_{timestamp}'
+		profile_config['user_data_dir'] = user_data_dir_path
+
+		#Create a unique directory  to store eventual downloads from browseruse for this call 
+		timestamp = int(time.time())
+		unique_id = str(uuid4())[:8]
+		downloads_dir = Path.cwd() / '.neo-sandbox' / 'browser_use_downloads' / f'{username.split("@")[0]}_{unique_id}_{timestamp}'
+		while downloads_dir.exists():
+			timestamp = int(time.time())
+			unique_id = str(uuid4())[:8]
+			downloads_dir = Path.cwd() / '.neo-sandbox' / 'browser_use_downloads' / f'{username.split("@")[0]}_{unique_id}_{timestamp}'
+		profile_config['downloads_path'] = downloads_dir 
+
+		
+
 		# Create browser profile using config
 		profile = BrowserProfile(**profile_config)
 

@@ -31,6 +31,7 @@ load_dotenv()
 from bubus import EventBus
 from pydantic import BaseModel, ValidationError
 from uuid_extensions import uuid7str
+from uuid import uuid4
 
 from browser_use import Browser, BrowserProfile, BrowserSession
 
@@ -219,7 +220,7 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 
 			llm_timeout = _get_model_timeout(llm)
 
-		self.id = task_id or uuid7str()
+		self.id = task_id or str(uuid4())[:8]
 		self.task_id: str = self.id
 		self.session_id: str = uuid7str()
 
@@ -299,8 +300,13 @@ class Agent(Generic[Context, AgentStructuredOutput]):
 		import time
 
 		timestamp = int(time.time())
-		base_tmp = Path(tempfile.gettempdir())
-		self.agent_directory = base_tmp / f'browser_use_agent_{self.id}_{timestamp}'
+		# Ensure the agent directory is unique (extremely unlikely collision, but be safe)
+		agent_dir = Path.cwd() / '.neo-sandbox' / 'browser_use_agent' / f'browser_use_agent_{self.id}_{timestamp}'
+		while agent_dir.exists():
+			timestamp = int(time.time())
+			unique_id = str(uuid4())[:8]
+			agent_dir = Path.cwd() / '.neo-sandbox' / 'browser_use_agent' / f'browser_use_agent_{unique_id}_{timestamp}'
+		self.agent_directory = agent_dir
 
 		# Initialize file system and screenshot service
 		self._set_file_system(file_system_path)

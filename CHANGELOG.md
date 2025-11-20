@@ -30,3 +30,6 @@
 
 ## 0.0.8 
 -Patch : Mauvaise condition dans retry qui empechait d'accéder à la connection par IAM.
+
+## 0.0.9
+-Upload des dossiers (browser-use-downloads / browser-use-user-data-dir / browser-use-downloads) dans le dossier .neo-sandbox afin d'éviter les memory leaks
