@@ -417,11 +417,6 @@ class BrowserUseServer:
 								'description': 'Maximum number of steps an agent can take.',
 								'default': 100,
 							},
-							'model': {
-								'type': 'string',
-								'description': 'LLM model to use (e.g., gpt-4o, claude-3-opus-20240229)',
-								'default': 'o3',
-							},
 							'allowed_domains': {
 								'type': 'array',
 								'items': {'type': 'string'},
@@ -676,7 +671,6 @@ class BrowserUseServer:
 		allowed_domains: list[str] | None = None,
 		use_vision: bool = True,
 		username: str = 'dummy.email@groupeonepoint.com'
-
 	) -> str:
 		"""Run an autonomous agent task."""
 		# Get LLM config and provider
@@ -759,7 +753,9 @@ class BrowserUseServer:
 		if allowed_domains is not None:
 			profile_config['allowed_domains'] = allowed_domains
 
-		profile_config['record_video_dir'] = profile_config['record_video_dir'] + f'/{username.split("@")[0]}' 
+		record_video_dir = Path("./.neo-sandbox/browser_videos")
+		user_part = f'{username.split("@")[0]}' 
+		profile_config['record_video_dir'] = record_video_dir / user_part
 		profile_config['record_video_file'] = llm_proposed_file_name 
 		print(f"Video will be saved to: {profile_config['record_video_dir']}")
 		print(f"Video file will be: {profile_config['record_video_file']}")

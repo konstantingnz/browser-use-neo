@@ -33,3 +33,7 @@
 
 ## 0.0.9
 -Upload des dossiers (browser-use-downloads / browser-use-user-data-dir / browser-use-downloads) dans le dossier .neo-sandbox afin d'éviter les memory leaks
+
+## 0.1.0
+-Retrait de la variable model dans retry_browser_use (inutile car override par la variable d'environnement)
+-Patch de l'effet sandwich (parfois on avait des doubles dossier (/dummy.email/dummy.email))
